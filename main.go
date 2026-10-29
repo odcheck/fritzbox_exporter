@@ -408,7 +408,14 @@ func (fc *FritzboxCollector) getActionResult(metric *Metric, actionName string, 
 }
 
 // Collect collect upnp metrics
+// collectMu serializes Collect. upnpCache/luaCache are plain maps and are not
+// safe for concurrent Collect() calls (prometheus Gather can overlap).
+var collectMu sync.Mutex
+
 func (fc *FritzboxCollector) Collect(ch chan<- prometheus.Metric) {
+	collectMu.Lock()
+	defer collectMu.Unlock()
+
 	fc.Lock()
 	root := fc.Root
 	fc.Unlock()
